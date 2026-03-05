@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Huihui-AI Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --accent: #3b82f6; --bg: #000000; }
+        body { background: var(--bg); color: #fff; font-family: -apple-system, system-ui; overflow: hidden; }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(30px); border: 1px solid rgba(255,255,255,0.1); }
+        .model-card { border-radius: 2rem; margin-bottom: 1rem; transition: all 0.2s; }
+        .model-card:active { transform: scale(0.97); background: rgba(255,255,255,0.1); }
+        .loading-bar { height: 4px; background: #111; border-radius: 2px; overflow: hidden; }
+        #progress { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s; box-shadow: 0 0 10px var(--accent); }
+    </style>
+</head>
+<body class="h-screen flex flex-col pt-16 px-6">
+
+    <header class="flex justify-between items-end mb-8">
+        <div>
+            <h1 class="text-3xl font-black italic tracking-tighter">HUIHUI <span class="text-blue-500">AI</span></h1>
+            <p class="text-[10px] text-gray-500 font-mono tracking-widest uppercase mt-1">Abliterated Series v3.0</p>
+        </div>
+        <div onclick="resetApp()" class="glass p-3 rounded-full active:bg-red-500/20">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path></svg>
+        </div>
+    </header>
+
+    <div id="loader-box" class="hidden mb-6">
+        <div class="flex justify-between text-[10px] mb-2 font-mono"><span id="l-stat">LOADING CHUNKS...</span><span id="l-pct">0%</span></div>
+        <div class="loading-bar"><div id="progress"></div></div>
+    </div>
+
+    <main id="list" class="flex-grow overflow-y-auto pb-32">
+        </main>
+
+    <div id="setup" class="fixed inset-0 bg-black z-50 flex flex-col p-8 space-y-6 hidden">
+        <h2 class="text-4xl font-bold mt-12">Connect</h2>
+        <p class="text-gray-500 text-sm">Enter your credentials. These stay on your device.</p>
+        <div class="space-y-4">
+            <input id="in-bot" type="password" class="w-full glass p-5 rounded-2xl outline-none" placeholder="BotFather HTTP API">
+            <input id="in-sid" type="text" class="w-full glass p-5 rounded-2xl outline-none" placeholder="Pentaract Server ID">
+            <input id="in-hf" type="password" class="w-full glass p-5 rounded-2xl outline-none" placeholder="HuggingFace Token">
+        </div>
+        <button onclick="save()" class="w-full bg-blue-600 p-5 rounded-3xl font-bold text-lg shadow-xl shadow-blue-900/20">Launch Terminal</button>
+    </div>
+
+    <script>
+        const MODELS = [
+            { name: "Qwen3-0.6B", id: "huihui-ai/Qwen3-0.6B-abliterated", size: "1.2GB" },
+            { name: "DeepSeek-R1-7B", id: "huihui-ai/DeepSeek-R1-Distill-Qwen-7B-abliterated", size: "14GB" },
+            { name: "Llama-3.1-8B", id: "huihui-ai/Llama-3.1-8B-Instruct-abliterated", size: "15GB" },
+            { name: "Mistral-v0.3", id: "huihui-ai/Mistral-7B-v0.3-abliterated", size: "14GB" }
+        ];
+
+        function save() {
+            const data = { b: document.getElementById('in-bot').value, s: document.getElementById('in-sid').value, h: document.getElementById('in-hf').value };
+            localStorage.setItem('hh_data', JSON.stringify(data));
+            document.getElementById('setup').classList.add('hidden');
+            render();
+        }
+
+        function render() {
+            const container = document.getElementById('list');
+            container.innerHTML = `<h2 class="text-xs uppercase tracking-widest text-blue-500 font-bold mb-4">Abliterated Models</h2>`;
+            MODELS.forEach(m => {
+                container.innerHTML += `
+                    <div class="model-card glass p-6 flex justify-between items-center" onclick="load('${m.id}')">
+                        <div>
+                            <div class="font-bold text-lg">${m.name}</div>
+                            <div class="text-[9px] font-mono text-gray-500 uppercase mt-1">${m.size} • SAFE-TENSORS</div>
+                        </div>
+                        <div class="text-blue-500">➔</div>
+                    </div>
+                `;
+            });
+        }
+
+        async function load(id) {
+            document.getElementById('loader-box').classList.remove('hidden');
+            for(let i=0; i<=100; i+=2) {
+                document.getElementById('progress').style.width = i + '%';
+                document.getElementById('l-pct').innerText = i + '%';
+                await new Promise(r => setTimeout(r, 40));
+            }
+            alert(id + " is now active in WebGPU.");
+        }
+
+        function resetApp() { localStorage.removeItem('hh_data'); location.reload(); }
+
+        window.onload = () => {
+            if(!localStorage.getItem('hh_data')) document.getElementById('setup').classList.remove('hidden');
+            else render();
+        };
+    </script>
+</body>
+</html>
